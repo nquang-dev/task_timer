@@ -1,47 +1,50 @@
-// TimerScreen.js - Màn hình chính với timer đếm ngược
-// Phase 1: Chỉ hiển thị UI và logic đếm ngược cơ bản, chưa lưu lịch sử
+
+
 
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
+import { saveSession } from '../utils/storage';
 
 export default function TimerScreen() {
-  // State quản lý thời gian còn lại (giây)
-  const WORK_DURATION = 25 * 60; // 25 phút = 1500 giây
+  
+  const WORK_DURATION = 25 * 60; 
   const [timeRemaining, setTimeRemaining] = useState(WORK_DURATION);
   
-  // State quản lý trạng thái chạy/dừng
+  
   const [isRunning, setIsRunning] = useState(false);
   
-  // State quản lý chế độ (work/break) - Phase 1 chỉ có Work mode
+  
   const [mode, setMode] = useState('work');
   
-  // Ref để lưu interval ID, tránh memory leak
+  
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  
+  
   const intervalRef = useRef(null);
 
-  // useEffect: Xử lý đếm ngược khi isRunning = true
+  
   useEffect(() => {
     if (isRunning && timeRemaining > 0) {
-      // Tạo interval đếm ngược mỗi giây
+      
       intervalRef.current = setInterval(() => {
         setTimeRemaining((prevTime) => {
           if (prevTime <= 1) {
-            // Khi hết giờ, dừng timer
+            
             setIsRunning(false);
-            console.log('⏰ Timer completed!');
-            // Phase 2: Sẽ thêm logic lưu lịch sử ở đây
+            handleSessionComplete();
             return 0;
           }
           return prevTime - 1;
         });
       }, 1000);
     } else {
-      // Clear interval khi pause hoặc hết giờ
+      
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     }
 
-    // Cleanup: Clear interval khi component unmount
+    
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -49,48 +52,86 @@ export default function TimerScreen() {
     };
   }, [isRunning, timeRemaining]);
 
-  // Format thời gian từ giây sang mm:ss
+  
+  const handleSessionComplete = async () => {
+    console.log('⏰ Timer completed!');
+    
+    
+    if (!sessionStartTime) {
+      console.log('⚠️ Không có sessionStartTime, bỏ qua việc lưu');
+      return;
+    }
+
+    
+    const endTime = Date.now();
+    const session = {
+      id: endTime.toString(), 
+      mode: mode, 
+      startTime: sessionStartTime, 
+      endTime: endTime, 
+      duration: WORK_DURATION, 
+      completedAt: new Date(endTime).toISOString(), 
+    };
+
+    
+    await saveSession(session);
+    console.log('💾 Session đã lưu vào lịch sử');
+    
+    
+    setSessionStartTime(null);
+  };
+
+  
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Handler: Start/Resume timer
+  
   const handleStart = () => {
     console.log('▶️ Start button pressed');
+    
+    
+    if (!sessionStartTime) {
+      setSessionStartTime(Date.now());
+      console.log('🕐 Session bắt đầu:', new Date().toLocaleTimeString());
+    }
+    
     setIsRunning(true);
   };
 
-  // Handler: Pause timer
+  
   const handlePause = () => {
     console.log('⏸️ Pause button pressed');
     setIsRunning(false);
   };
 
-  // Handler: Reset timer về thời gian ban đầu
+  
   const handleReset = () => {
     console.log('🔄 Reset button pressed');
     setIsRunning(false);
     setTimeRemaining(WORK_DURATION);
+    
+    setSessionStartTime(null);
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* Header: Hiển thị chế độ hiện tại */}
+ 
       <View style={styles.header}>
         <Text style={styles.modeText}>Work Time</Text>
         <Text style={styles.modeSubtext}>Stay focused! 🎯</Text>
       </View>
 
-      {/* Timer Display: Hiển thị đồng hồ đếm ngược */}
+     
       <View style={styles.timerContainer}>
         <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
       </View>
 
-      {/* Control Buttons: Start, Pause, Reset */}
+     
       <View style={styles.controlsContainer}>
         {!isRunning ? (
           <TouchableOpacity 
@@ -119,7 +160,7 @@ export default function TimerScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Status Indicator: Hiển thị trạng thái */}
+ 
       <View style={styles.statusContainer}>
         <View style={[styles.statusDot, isRunning ? styles.runningDot : styles.pausedDot]} />
         <Text style={styles.statusText}>
@@ -133,7 +174,7 @@ export default function TimerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E3F2FD', // Nền xanh nhạt theo SPEC
+    backgroundColor: '#E3F2FD', 
     paddingHorizontal: 24,
     paddingTop: 60,
   },
@@ -144,7 +185,7 @@ const styles = StyleSheet.create({
   modeText: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1976D2', // Xanh đậm theo SPEC
+    color: '#1976D2', 
     marginBottom: 8,
   },
   modeSubtext: {
@@ -159,7 +200,7 @@ const styles = StyleSheet.create({
     fontSize: 72,
     fontWeight: 'bold',
     color: '#1565C0',
-    fontVariant: ['tabular-nums'], // Font monospace cho số
+    fontVariant: ['tabular-nums'], 
   },
   controlsContainer: {
     flexDirection: 'row',
@@ -173,22 +214,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     minWidth: 120,
     alignItems: 'center',
-    // Shadow cho iOS
+    
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    // Shadow cho Android
+    
     elevation: 3,
   },
   startButton: {
     backgroundColor: '#1976D2',
   },
   pauseButton: {
-    backgroundColor: '#F57C00', // Cam cho pause
+    backgroundColor: '#F57C00', 
   },
   resetButton: {
-    backgroundColor: '#757575', // Xám cho reset
+    backgroundColor: '#757575', 
   },
   buttonText: {
     color: '#FFFFFF',
@@ -208,10 +249,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   runningDot: {
-    backgroundColor: '#4CAF50', // Xanh lá khi đang chạy
+    backgroundColor: '#4CAF50', 
   },
   pausedDot: {
-    backgroundColor: '#9E9E9E', // Xám khi pause
+    backgroundColor: '#9E9E9E', 
   },
   statusText: {
     fontSize: 14,
