@@ -3,8 +3,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 const STORAGE_KEY = '@pomodoro_history';
+const SETTINGS_KEY = '@pomodoro_settings';
 
 /**
  
@@ -57,5 +57,29 @@ export const clearHistory = async () => {
     console.log('🗑️ Đã xóa toàn bộ lịch sử');
   } catch (error) {
     console.error('❌ Lỗi khi xóa lịch sử:', error);
+  }
+};
+
+export const saveSettings = async (settings) => {
+  try {
+    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    console.log('⚙️ Settings đã được lưu:', settings);
+  } catch (error) {
+    console.error('❌ Lỗi khi lưu settings:', error);
+  }
+};
+
+export const getSettings = async () => {
+  try {
+    const data = await AsyncStorage.getItem(SETTINGS_KEY);
+    if (data) {
+      const settings = JSON.parse(data);
+      console.log('⚙️ Đã tải settings:', settings);
+      return settings;
+    }
+    return null;
+  } catch (error) {
+    console.error('❌ Lỗi khi đọc settings:', error);
+    return null;
   }
 };
