@@ -94,7 +94,7 @@ export default function HistoryScreen() {
         </Text>
       </View>
 
-    
+      {/* FlatList hiển thị lịch sử */}
       <FlatList
         data={history}
         renderItem={renderItem}
